@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  documents Document[]
+}
+
+model Signer {
+  id           String     @id @default(uuid())
+  name         String
+  email        String
+  signerToken  String?    @unique
+  documents    Document[] // One signer to many documents
+}
+
+
+model Document {
+  id         String         @id @default(uuid())
+  title      String
+  filePath   String
+  uploadedAt DateTime       @default(now())
+  userId     Int
+  signerId   String?        // Optional until document is prepared
+
+  user       User           @relation(fields: [userId], references: [id])
+  signer     Signer?        @relation(fields: [signerId], references: [id])
+  fields     Field[]
+  
+  status     DocumentStatus @default(DRAFT)
+}
+
+model Field {
+  id         String     @id @default(uuid())
+  type       FieldType
+  x          Int
+  y          Int
+  page       Int
+  value      String?    // Signed/filled value
+  documentId String
+
+  document   Document   @relation(fields: [documentId], references: [id])
+}
+
+enum FieldType {
+  SIGNATURE
+  TEXT
+  DATE
+  INITIALS
+}
+
+enum DocumentStatus {
+  DRAFT
+  SENT
+  SIGNED
+}
